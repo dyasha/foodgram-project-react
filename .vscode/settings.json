@@ -1,0 +1,11 @@
+{
+    "python.linting.flake8Enabled": false,
+    "python.linting.enabled": true,
+    "python.analysis.typeCheckingMode": "off",
+    "python.linting.mypyEnabled": false,
+    "python.linting.ignorePatterns": [
+        ".vscode/*.py",
+        "**/site-packages/**/*.py"
+    ],
+    "python.linting.pycodestyleEnabled": true
+}

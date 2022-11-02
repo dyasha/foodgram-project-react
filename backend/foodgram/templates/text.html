@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>    
+    <meta charset="utf-8">
+  </head>
+<h1>Список ингредиентов для покупок.</h1>
+<ul>
+
+{% for key, values in ing_recipes.items%}
+  <h3><li>{{ key }}({{values.0}}) - {{values.1}}</li></h3>
+{% endfor %}
+</ul>
