@@ -1,9 +1,7 @@
 from django.contrib import admin
 
-from users.models import CustomUser, Follow
-
-from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                     ShoppingCart, Tag, TagRecipe)
+from .models import (CustomUser, Favorite, Follow, Ingredient,
+                     IngredientRecipe, Recipe, ShoppingCart, Tag, TagRecipe)
 
 
 class CustomUserAdmin(admin.ModelAdmin):
@@ -25,17 +23,19 @@ class TagAdmin(admin.ModelAdmin):
 
 class IngredientInline(admin.TabularInline):
     model = IngredientRecipe
-    extra = 1
+    extra = 0
+    min_num = 1
 
 
 class TagRecipeInline(admin.TabularInline):
     model = TagRecipe
-    extra = 1
+    extra = 0
+    min_num = 1
 
 
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'author')
-    list_filter = ('author', 'name', 'tag')
+    list_filter = ('author', 'name', 'tags')
     inlines = (TagRecipeInline, IngredientInline)
 
 
@@ -45,7 +45,7 @@ class IngridientAdmin(admin.ModelAdmin):
 
 
 class FollowAdmin(admin.ModelAdmin):
-    list_display = ('user', 'author')
+    list_display = ('user', 'author', 'author_id')
 
 
 class IngredientRecipeAdmin(admin.ModelAdmin):
@@ -54,7 +54,7 @@ class IngredientRecipeAdmin(admin.ModelAdmin):
 
 
 class TagRecipeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'tag', 'recipe')
+    list_display = ('id', 'tags', 'recipe')
 
 
 admin.site.register(CustomUser, CustomUserAdmin)

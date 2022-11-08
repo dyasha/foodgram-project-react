@@ -1,51 +1,52 @@
 import pdfkit
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.template import loader
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import filters, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
-from users.models import CustomUser, Follow
+from recipes.models import (CustomUser, Favorite, Follow, Ingredient, Recipe,
+                            ShoppingCart, Tag)
 
-from .filters import RecipeFilter
+from .filters import RecipeFilter, SearchIngredient
 from .permissions import AuthorOrStaffOrReadOnly, IsAdminOrReadOnly, OnlyAuthor
-from .serializers import (CustomUserSerializer, FavoriteSerializer,
-                          IngredientRecipe, IngredientViewSerializer,
-                          RecipeSerializer, ShoppingCartSerializer,
-                          SubscribeSerializer, TagSerializer,
-                          WriteRecipeSerializer)
+from .serializers import (FavoriteSerializer, IngredientRecipe,
+                          IngredientViewSerializer, RecipeSerializer,
+                          ShoppingCartSerializer, SubscribeSerializer,
+                          TagSerializer, UserSerializer, WriteRecipeSerializer)
 
 
 class UserViewSet(UserViewSet):
     queryset = CustomUser.objects.all()
-    serializer_class = CustomUserSerializer
+    serializer_class = UserSerializer
 
     @action(detail=True,
             methods=['post', 'delete'],
             permission_classes=[IsAuthenticated])
     def subscribe(self, request, id=None):
-        author = CustomUser.objects.get(id=id)
+        author = get_object_or_404(CustomUser, id=id)
         if request.method == 'POST':
-            if request.user == author:
-                return Response('Подписаться на себя невозможно.')
             serializer = SubscribeSerializer(
-                author, context={'request': request})
-            Follow.objects.create(user=request.user,
-                                  author=author)
+                author, context={'request': request}
+            )
+            Follow.objects.create(
+                user=request.user, author=author
+            )
             return Response(serializer.data)
-        else:
-            serializer = SubscribeSerializer(author)
-            if Follow.objects.filter(user=request.user,
-                                     author=author).exists():
-                Follow.objects.get(
-                    user=request.user,
-                    author=CustomUser.objects.get(
-                        username=serializer.data.get('username'))).delete()
-            return Response(status.HTTP_204_NO_CONTENT)
+
+        if Follow.objects.filter(user=request.user,
+                                 author=author).exists():
+            Follow.objects.get(user=request.user,
+                               author=author).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        raise ValidationError(
+            {'errors': 'Вы не подписаны на пользователя'}
+        )
 
     @action(detail=False,
             methods=['get'],
@@ -70,8 +71,8 @@ class TagViewSet(viewsets.ModelViewSet):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     pagination_class = None
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    filter_backends = (SearchIngredient,)
+    search_fields = ('^name',)
     serializer_class = IngredientViewSerializer
 
 
@@ -82,7 +83,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Recipe.objects.all()
-        is_favorite = self.request.query_params.get('is_favorite')
+        is_favorite = self.request.query_params.get('is_favorited')
         if is_favorite == '1':
             queryset = queryset.filter(favorite__user=self.request.user)
         is_in_shopping_cart = self.request.query_params.get(
@@ -102,7 +103,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True,
             methods=['post', 'delete'],
             permission_classes=[IsAuthenticated])
-    def favorite(self, request, pk=None):
+    def favorite(self, request, pk):
         recipe = Recipe.objects.get(id=pk)
         if request.method == 'POST':
             if Favorite.objects.filter(
@@ -162,7 +163,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     i.ingredient.measurement_unit, new_amount]
         template = loader.get_template('text.html')
         context = {
-            'hello': 'hello',
             'ing_recipes': ing_recipes
         }
         html = template.render(context, request)

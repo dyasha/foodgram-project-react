@@ -1,11 +1,16 @@
 import django_filters
+from rest_framework.filters import SearchFilter
 
 from recipes.models import Recipe, Tag
 
 
+class SearchIngredient(SearchFilter):
+    search_param = 'name'
+
+
 class RecipeFilter(django_filters.FilterSet):
-    tag = django_filters.filters.ModelMultipleChoiceFilter(
-        field_name='tag__slug',
+    tags = django_filters.filters.ModelMultipleChoiceFilter(
+        field_name='tags__slug',
         to_field_name='slug',
         queryset=Tag.objects.all()
     )
@@ -15,4 +20,4 @@ class RecipeFilter(django_filters.FilterSet):
 
     class Meta:
         model = Recipe
-        fields = ('tag', 'author')
+        fields = ('tags', 'author')
