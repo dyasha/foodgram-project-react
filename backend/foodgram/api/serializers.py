@@ -1,4 +1,5 @@
 import webcolors
+from django.core.exceptions import ValidationError
 from django.db.models import F
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
@@ -174,6 +175,10 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
         ingredients_list = []
         for item in ingredients:
             ingredient = item['ingredient'].id
+            if ingredient in ingredients_list:
+                raise ValidationError(
+                    'Ингредиенты не могут повторяться.'
+                )
             ingredients_list.append(ingredient)
         return value
 

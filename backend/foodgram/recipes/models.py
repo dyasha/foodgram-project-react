@@ -136,7 +136,7 @@ class IngredientRecipe(models.Model):
         default_related_name = 'ingredient_recipes'
         verbose_name_plural = 'Ингредиент с рецептом'
         constraints = [
-            models.UniqueConstraint(fields=['recipe', 'ingredient', 'amount'],
+            models.UniqueConstraint(fields=['recipe', 'ingredient'],
                                     name='unique_ingredient_recipe_object'),
         ]
 

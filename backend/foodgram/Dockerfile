@@ -8,9 +8,9 @@ RUN pip install -r requirements.txt --no-cache-dir
 
 COPY . .
 
-RUN apt update
+# RUN apt update
 
-RUN apt-get -y install wkhtmltopdf
+# RUN apt-get -y install wkhtmltopdf
 
 LABEL author="Beresnev Vladislav" version="1.0" 
 
