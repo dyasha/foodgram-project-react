@@ -14,16 +14,20 @@ from recipes.models import (CustomUser, Favorite, Follow, Ingredient, Recipe,
                             ShoppingCart, Tag)
 
 from .filters import RecipeFilter, SearchIngredient
+from .pagination import PaginateCustom
 from .permissions import AuthorOrStaffOrReadOnly, IsAdminOrReadOnly, OnlyAuthor
 from .serializers import (FavoriteSerializer, IngredientRecipe,
                           IngredientViewSerializer, RecipeSerializer,
                           ShoppingCartSerializer, SubscribeSerializer,
                           TagSerializer, UserSerializer, WriteRecipeSerializer)
 
+ONE = '1'
+
 
 class UserViewSet(UserViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+    pagination_class = PaginateCustom
 
     @action(detail=True,
             methods=['post', 'delete'],
@@ -34,7 +38,7 @@ class UserViewSet(UserViewSet):
             serializer = SubscribeSerializer(
                 author, context={'request': request}
             )
-            Follow.objects.create(
+            Follow.objects.get_or_create(
                 user=request.user, author=author
             )
             return Response(serializer.data)
@@ -80,15 +84,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (AuthorOrStaffOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+    pagination_class = PaginateCustom
 
     def get_queryset(self):
         queryset = Recipe.objects.all()
         is_favorite = self.request.query_params.get('is_favorited')
-        if is_favorite == '1':
+        if is_favorite == ONE:
             queryset = queryset.filter(favorite__user=self.request.user)
         is_in_shopping_cart = self.request.query_params.get(
             'is_in_shopping_cart')
-        if is_in_shopping_cart == '1':
+        if is_in_shopping_cart == ONE:
             queryset = queryset.filter(shop__user=self.request.user)
         return queryset
 
@@ -104,7 +109,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             methods=['post', 'delete'],
             permission_classes=[IsAuthenticated])
     def favorite(self, request, pk):
-        recipe = Recipe.objects.get(id=pk)
+        recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':
             if Favorite.objects.filter(
                     user=request.user,
@@ -124,7 +129,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             methods=['post', 'delete'],
             permission_classes=[IsAuthenticated])
     def shopping_cart(self, request, pk):
-        recipe = Recipe.objects.get(id=pk)
+        recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':
             if ShoppingCart.objects.filter(
                     user=request.user,

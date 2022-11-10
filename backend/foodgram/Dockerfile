@@ -1,4 +1,4 @@
-FROM python:3.8.5
+FROM python:3.7-slim
 
 WORKDIR /app
 
@@ -8,6 +8,10 @@ RUN pip install -r requirements.txt --no-cache-dir
 
 COPY . .
 
-LABEL author="Beresnev Vladislav" version="1.0"
+RUN apt update
+
+RUN apt-get -y install wkhtmltopdf
+
+LABEL author="Beresnev Vladislav" version="1.0" 
 
 CMD ["gunicorn", "foodgram.wsgi:application", "--bind", "0:8000" ] 

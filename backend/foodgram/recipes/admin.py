@@ -4,6 +4,15 @@ from .models import (CustomUser, Favorite, Follow, Ingredient,
                      IngredientRecipe, Recipe, ShoppingCart, Tag, TagRecipe)
 
 
+class MinValidatedInlineMixin:
+    validate_min = True
+
+    def get_formset(self, *args, **kwargs):
+        return super().get_formset(
+            validate_min=self.validate_min, *args, **kwargs
+        )
+
+
 class CustomUserAdmin(admin.ModelAdmin):
     list_display = ('id', 'username', 'email')
     list_filter = ('email', 'username')
@@ -21,13 +30,14 @@ class TagAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'color', 'slug')
 
 
-class IngredientInline(admin.TabularInline):
+class IngredientInline(MinValidatedInlineMixin, admin.StackedInline):
     model = IngredientRecipe
     extra = 0
     min_num = 1
+    validate_min = True
 
 
-class TagRecipeInline(admin.TabularInline):
+class TagRecipeInline(admin.StackedInline):
     model = TagRecipe
     extra = 0
     min_num = 1

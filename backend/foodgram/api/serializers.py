@@ -42,14 +42,24 @@ class RecipesSerializer(serializers.ModelSerializer):
 
 class SubscribeSerializer(UserSerializer):
     recipes_count = serializers.SerializerMethodField()
-    recipes = RecipesSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
+
         fields = ('email', 'id', 'username', 'first_name',
                   'last_name', 'is_subscribed', 'recipes', 'recipes_count')
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
+
+    def get_recipes(self, obj):
+        recipes = Recipe.objects.filter(author=obj)
+        recipes_limit = self.context['request'].query_params.get(
+            'recipes_limit'
+        )
+        if recipes_limit:
+            recipes = recipes[:int(recipes_limit)]
+        return RecipesSerializer(recipes, many=True).data
 
 
 class Hex2NameColor(serializers.Field):
@@ -163,11 +173,7 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
         ingredients = value
         ingredients_list = []
         for item in ingredients:
-            ingredient = item["ingredient"].id
-            if ingredient in ingredients_list:
-                raise serializers.ValidationError({
-                    'ingredients': 'Ингредиенты не могут повторяться!'
-                })
+            ingredient = item['ingredient'].id
             ingredients_list.append(ingredient)
         return value
 
@@ -194,18 +200,6 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        instance.image = validated_data.get(
-            'image', instance.image
-        )
-        instance.name = validated_data.get(
-            'name', instance.name
-        )
-        instance.text = validated_data.get(
-            'text', instance.text
-        )
-        instance.cooking_time = validated_data.get(
-            'cooking_time', instance.cooking_time
-        )
 
         if 'tags' in validated_data:
             tags_data = validated_data.pop('tags', None)
@@ -244,6 +238,7 @@ class WriteRecipeSerializer(serializers.ModelSerializer):
             instance.ingredients.set(lst)
 
         instance.save()
+        super().update(instance, validated_data)
         return instance
 
     def to_representation(self, instance):

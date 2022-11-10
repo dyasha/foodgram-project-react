@@ -3,10 +3,11 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+ADMIN = 'admin'
+USER = 'user'
+
 
 class CustomUser(AbstractUser):
-    ADMIN = 'admin'
-    USER = 'user'
     USER_ROLES = (
         (ADMIN, _('Administrator')),
         (USER, _('User')),
@@ -23,6 +24,10 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name_plural = 'Пользователи'
         ordering = ['username']
+
+    @property
+    def is_admin(self):
+        return self.role == ADMIN
 
     def __str__(self):
         return self.username
@@ -131,7 +136,7 @@ class IngredientRecipe(models.Model):
         default_related_name = 'ingredient_recipes'
         verbose_name_plural = 'Ингредиент с рецептом'
         constraints = [
-            models.UniqueConstraint(fields=['recipe', 'ingredient'],
+            models.UniqueConstraint(fields=['recipe', 'ingredient', 'amount'],
                                     name='unique_ingredient_recipe_object'),
         ]
 
